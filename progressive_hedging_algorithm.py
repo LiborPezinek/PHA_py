@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 # a dedicated solver for a single scenario for our problem with multiple products
 def SolveScenarioMultiProduct(xbar, omega, purchaseCost, holdingCost, shortageCost, demand, rho):
@@ -37,7 +38,8 @@ def SolveScenarioMultiProduct(xbar, omega, purchaseCost, holdingCost, shortageCo
 
 # progressive hedging for multiple-product inventory problem
 def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
-                                      rho=1.0, eps=1e-6, max_iter=100, verbose=True):
+                                   rho=1.0, eps=1e-6, max_iter=100, verbose=True,
+                                   plot=False, save_path=None):
     # variables initialization
     S = len(demands)    # number of scenarios
     P = demands[0].shape[0]     # number of products
@@ -98,11 +100,18 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
 
         # log iteration info
         if verbose:
-            print(f"Iter {it:2d}: q_bar={x_bar}, , E[cost]={exp_cost:.2f}, phi={phi:.4e}")
+            print(f"Iter {it:2d}; x_bar={x_bar}; E[cost]={exp_cost:.2f}; phi={phi:.4e}; \n x_s=\n{x_s}")
 
         if converged:
             print(f"Converged in {it} iterations (phi ≤ eps).")
             break
+
+    if plot:
+        x_opt_single = np.zeros((S, P))
+        for s in range(S):
+            x_opt_single[s] = SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demands[s])
+        
+        plot_solutions(x_opt_single, x_s, x_bar, save_path=save_path)
 
     return x_bar, x_s, omegas, exp_cost
 
@@ -117,23 +126,84 @@ def demo_multi():
         np.array([50.0, 30.0, 20.0]),   # scenario 1
         np.array([100.0, 40.0, 30.0]),  # scenario 2
         np.array([150.0, 60.0, 40.0]),   # scenario 3
-        np.array([200.0, 80.0, 50.0]),   # scenario 4
-        np.array([250.0, 100.0, 60.0]),  # scenario 5
-        np.array([300.0, 120.0, 70.0])  # scenario 6
+        np.array([80.0, 50.0, 70.0])    # scenario 4
     ]
-    probs = np.array([0.3, 0.7, 0.5, 0.2, 0.1, 0.2])
+    probs = np.array([0.3, 0.7, 0.5, 0.2])
     rho = 1.0
 
-    q_bar, q_s, omegas, exp_cost = ProgressiveHedgingMultiProduct(
-        purchase, holding, shortage, demands, probs, rho=rho, eps=1e-6, max_iter=1000, verbose=False
+    x_bar, x_s, omegas, exp_cost = ProgressiveHedgingMultiProduct(
+        purchase, holding, shortage, demands, probs,
+        rho=rho, eps=1e-1, max_iter=1000, verbose=True,
+        plot=True, save_path=None  # or a path like "inventory_plot.png"
     )
 
     print("\nFinal multi-product results:")
-    print(" q_bar =", q_bar)
+    print(" x_bar =", x_bar)
     print("\n E[cost] =", exp_cost, "\n")
 
-    print(" q_s   =\n", q_s, "\n")
+    print(" x_s   =\n", x_s, "\n")
     #print(" omegas =\n", omegas, "\n")
+
+
+def plot_solutions(x_opt_single, x_s, x_bar, title="Inventory Decisions Across Scenarios", save_path=None):
+    S, P = x_s.shape
+
+    product_labels = [f"Product {i+1}" for i in range(P)]
+
+    fig, axes = plt.subplots(1, S, figsize=(5*S, 4), sharey=True)
+    if S == 1:
+        axes = [axes]
+
+    fig.suptitle(title, fontsize=14)
+
+    for s, ax in enumerate(axes):
+        ax.bar(range(P), x_opt_single[s], color="skyblue", alpha=0.8)
+        ax.set_title(f"Scenario {s+1}")
+        ax.set_xticks(range(P))
+        ax.set_xticklabels(product_labels, rotation=0)
+        ax.set_ylabel("Stock Levels")
+        ax.set_xlabel("Products")
+
+        # dashed global decision per product
+        for j in range(P):
+            ax.hlines(y=x_bar[j], xmin=j-0.4, xmax=j+0.4, colors="black", linestyles="--", label=None)
+
+        # add a single legend entry for dashed line
+        ax.plot([], [], linestyle="--", color="black", label="Global Decision")
+        ax.legend(loc="upper left")
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    if save_path:
+        plt.savefig(save_path, dpi=120)
+    plt.show()
+
+def SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demand):
+        """
+        Solve the scenario subproblem without augmentation terms.
+        Find optimal x that minimizes: purchase*x + holding*max(x-d,0) + shortage*max(d-x,0)
+        """
+        P = demand.shape[0]
+        x_opt = np.zeros(P)
+        
+        for j in range(P):
+            # Candidates: 0 and demand[j]
+            candidates = [0.0, demand[j]]
+            best_x = 0.0
+            best_val = float("inf")
+            
+            for x in candidates:
+                hold_cost = holding[j] * max(x - demand[j], 0.0)
+                short_cost = shortage[j] * max(demand[j] - x, 0.0)
+                val = purchase[j] * x + hold_cost + short_cost
+                
+                if val < best_val:
+                    best_val = val
+                    best_x = x
+            
+            x_opt[j] = best_x
+        
+        return x_opt
+
 
 if __name__ == '__main__':
     demo_multi()
