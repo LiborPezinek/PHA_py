@@ -39,7 +39,7 @@ def SolveScenarioMultiProduct(xbar, omega, purchaseCost, holdingCost, shortageCo
 # progressive hedging for multiple-product inventory problem
 def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
                                    rho=1.0, eps=1e-6, max_iter=100, verbose=True,
-                                   plot=False, save_path=None):
+                                   plot=False):
     # variables initialization
     S = len(demands)    # number of scenarios
     P = demands[0].shape[0]     # number of products
@@ -111,12 +111,26 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
         for s in range(S):
             x_opt_single[s] = SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demands[s])
         
-        plot_solutions(x_opt_single, x_s, x_bar, save_path=save_path)
+        PlotSolutions(x_opt_single, x_s, x_bar)
 
     return x_bar, x_s, omegas, exp_cost
 
 
-def demo_multi():
+def DemoMulti():
+
+    # # Example with 2 products and 2 scenarios
+    # purchase = np.array([10.0, 15.0])
+    # holding = np.array([1.0, 2.0])
+    # shortage = np.array([50.0, 75.0])
+
+    # demands = [
+    #     np.array([40.0, 60.0]),   # scenario 1
+    #     np.array([80.0, 100.0])   # scenario 2
+    # ]
+    # probs = np.array([0.5, 0.5])
+    # rho = 0.5
+
+
     # Example with 3 products and 3 scenarios
     purchase = np.array([5.0, 6.0, 8.0])
     holding = np.array([2.0, 1.5, 3.0])
@@ -131,10 +145,12 @@ def demo_multi():
     probs = np.array([0.3, 0.7, 0.5, 0.2])
     rho = 1.0
 
+
+
     x_bar, x_s, omegas, exp_cost = ProgressiveHedgingMultiProduct(
         purchase, holding, shortage, demands, probs,
-        rho=rho, eps=1e-1, max_iter=1000, verbose=True,
-        plot=True, save_path=None  # or a path like "inventory_plot.png"
+        rho=rho, eps=1e-3, max_iter=1000, verbose=False,
+        plot=False
     )
 
     print("\nFinal multi-product results:")
@@ -145,7 +161,10 @@ def demo_multi():
     #print(" omegas =\n", omegas, "\n")
 
 
-def plot_solutions(x_opt_single, x_s, x_bar, title="Inventory Decisions Across Scenarios", save_path=None):
+
+
+# plot PHA solutions against single-scenario optima
+def PlotSolutions(x_opt_single, x_s, x_bar, title="Inventory Decisions Across Scenarios"):
     S, P = x_s.shape
 
     product_labels = [f"Product {i+1}" for i in range(P)]
@@ -173,10 +192,9 @@ def plot_solutions(x_opt_single, x_s, x_bar, title="Inventory Decisions Across S
         ax.legend(loc="upper left")
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    if save_path:
-        plt.savefig(save_path, dpi=120)
     plt.show()
 
+# helper function for plot_solutions() to solve single scenario optimally without PH
 def SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demand):
         """
         Solve the scenario subproblem without augmentation terms.
@@ -205,5 +223,6 @@ def SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demand):
         return x_opt
 
 
+
 if __name__ == '__main__':
-    demo_multi()
+    DemoMulti()
