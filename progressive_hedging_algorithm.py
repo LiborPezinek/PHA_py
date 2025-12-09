@@ -28,7 +28,7 @@ def SolveScenarioMultiProduct(xbar, omega, purchaseCost, holdingCost, shortageCo
                 best_x = x
         x_opt[j] = best_x
 
-    # Compute scenario value with optimal x_opt
+    # Compute scenario value with optimal x_opt - for logging, not used in PH
     hold_vec = holdingCost * np.maximum(x_opt - demand, 0.0)
     short_vec = shortageCost * np.maximum(demand - x_opt, 0.0)
     aug_vec = 0.5 * rho * (x_opt - xbar) ** 2 + omega * x_opt
