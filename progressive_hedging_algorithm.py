@@ -49,9 +49,11 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
     print("\nPH multi-product")
     print(f"P={P}, S={S}, rho={rho}")
     print(f"probs={probs}")
-    print(f"purchase={purchase}, holding={holding}, shortage={shortage}\n")
+    print(f"purchase={purchase}, holding={holding}, shortage={shortage}")
+    print(f"eps={eps}, max_iter={max_iter}\n")
 
     for it in range(1, max_iter + 1):
+
         # Solve each scenario independently, vectorizing over products
         for s in range(S):
             x_opt, _ = SolveScenarioMultiProduct(
@@ -60,7 +62,6 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
                 demand=demands[s], rho=rho
             )
             x_s[s] = x_opt
-            # x_s of shape (S, P)
 
         # Weighted average across scenarios for each product
         x_bar_new = np.einsum('s,sp->p', probs, x_s)  # shape (P,)
@@ -103,7 +104,7 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
             print(f"Converged in {it} iterations (phi ≤ eps).")
             break
 
-    return x_bar, x_s, omegas
+    return x_bar, x_s, omegas, exp_cost
 
 
 def demo_multi():
@@ -123,14 +124,16 @@ def demo_multi():
     probs = np.array([0.3, 0.7, 0.5, 0.2, 0.1, 0.2])
     rho = 1.0
 
-    q_bar, q_s, omegas = ProgressiveHedgingMultiProduct(
-        purchase, holding, shortage, demands, probs, rho=rho, eps=1e-6, max_iter=1000, verbose=True
+    q_bar, q_s, omegas, exp_cost = ProgressiveHedgingMultiProduct(
+        purchase, holding, shortage, demands, probs, rho=rho, eps=1e-6, max_iter=1000, verbose=False
     )
 
     print("\nFinal multi-product results:")
-    print(" q_bar =", q_bar, "\n")
+    print(" q_bar =", q_bar)
+    print("\n E[cost] =", exp_cost, "\n")
+
     print(" q_s   =\n", q_s, "\n")
-    print(" omegas =\n", omegas, "\n")
+    #print(" omegas =\n", omegas, "\n")
 
 if __name__ == '__main__':
     demo_multi()
