@@ -114,10 +114,9 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
 def DemoMulti():
 
 
-    # Example with 3 products and 3 scenarios
     purchase = np.array([5.0, 6.0, 8.0])
-    holding = np.array([2.0, 10.5, 3.0])
-    shortage = np.array([13.0, 9.0, 11.0])
+    holding = np.array([2.0, 5.5, 12.0])
+    shortage = np.array([13.0, 11.0, 10.0])
 
     demands = [
         np.array([50.0, 30.0, 20.0]),   # scenario 1
@@ -128,6 +127,23 @@ def DemoMulti():
     probs = np.array([0.3, 0.1, 0.4, 0.2])
     rho = 1.0
 
+
+    # # the same input data as in the presentation
+    # purchase = np.array([5.0, 6.0, 8.0])
+    # holding = np.array([2.0, 1.5, 3.0])
+    # shortage = np.array([130.0, 90.0, 110.0])
+
+    # demands = [
+    #     np.array([50.0, 30.0, 20.0]),   # scenario 1
+    #     np.array([100.0, 40.0, 30.0]),  # scenario 2
+    #     np.array([150.0, 60.0, 40.0]),   # scenario 3
+    #     np.array([80.0, 50.0, 70.0])    # scenario 4
+    # ]
+    # probs = np.array([0.3, 0.1, 0.4, 0.2])
+    # rho = 1.0
+
+    ######################################################################
+
     plot = True
     S = len(demands)    # number of scenarios
     P = demands[0].shape[0]     # number of products
@@ -137,6 +153,12 @@ def DemoMulti():
         rho=rho, eps=1e-3, max_iter=1000, verbose=False,
     )
 
+    print("\nFinal multi-product results:")
+    print(" x_bar =", x_bar)
+    print("\n E[cost] =", exp_cost, "\n")
+    print(" x_s   =\n", x_s, "\n")
+    #print(" omegas =\n", omegas, "\n")
+
     # plot PHA solutions against single-scenario optima
     if plot:
         x_opt_single = np.zeros((S, P))
@@ -144,12 +166,6 @@ def DemoMulti():
             x_opt_single[s] = SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demands[s])
         
         PlotSolutions(x_opt_single, x_s, x_bar)
-
-    print("\nFinal multi-product results:")
-    print(" x_bar =", x_bar)
-    print("\n E[cost] =", exp_cost, "\n")
-    print(" x_s   =\n", x_s, "\n")
-    #print(" omegas =\n", omegas, "\n")
 
 
 
