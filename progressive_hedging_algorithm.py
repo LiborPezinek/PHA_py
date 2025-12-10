@@ -38,8 +38,8 @@ def SolveScenarioMultiProduct(xbar, omega, purchaseCost, holdingCost, shortageCo
 
 # progressive hedging for multiple-product inventory problem
 def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
-                                   rho=1.0, eps=1e-6, max_iter=100, verbose=True,
-                                   plot=False):
+                                   rho=1.0, eps=1e-6, max_iter=100, verbose=True
+                                   ):
     # variables initialization
     S = len(demands)    # number of scenarios
     P = demands[0].shape[0]     # number of products
@@ -54,6 +54,8 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
     print(f"purchase={purchase}, holding={holding}, shortage={shortage}")
     print(f"eps={eps}, max_iter={max_iter}\n")
 
+
+    # main PH loop
     for it in range(1, max_iter + 1):
 
         # Solve each scenario independently, vectorizing over products
@@ -100,41 +102,22 @@ def ProgressiveHedgingMultiProduct(purchase, holding, shortage, demands, probs,
 
         # log iteration info
         if verbose:
-            print(f"Iter {it:2d}; x_bar={x_bar}; E[cost]={exp_cost:.2f}; phi={phi:.4e}; \n x_s=\n{x_s}")
+            print(f"Iter {it:2d}; x_bar={x_bar}; E[cost]={exp_cost:.2f}; phi={phi:.4e}; \n x_s=\n{x_s}; \n omegas=\n{omegas}\n\n")
 
         if converged:
             print(f"Converged in {it} iterations (phi ≤ eps).")
             break
-
-    if plot:
-        x_opt_single = np.zeros((S, P))
-        for s in range(S):
-            x_opt_single[s] = SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demands[s])
-        
-        PlotSolutions(x_opt_single, x_s, x_bar)
 
     return x_bar, x_s, omegas, exp_cost
 
 
 def DemoMulti():
 
-    # # Example with 2 products and 2 scenarios
-    # purchase = np.array([10.0, 15.0])
-    # holding = np.array([1.0, 2.0])
-    # shortage = np.array([50.0, 75.0])
-
-    # demands = [
-    #     np.array([40.0, 60.0]),   # scenario 1
-    #     np.array([80.0, 100.0])   # scenario 2
-    # ]
-    # probs = np.array([0.5, 0.5])
-    # rho = 0.5
-
 
     # Example with 3 products and 3 scenarios
     purchase = np.array([5.0, 6.0, 8.0])
-    holding = np.array([2.0, 1.5, 3.0])
-    shortage = np.array([130.0, 90.0, 110.0])
+    holding = np.array([2.0, 10.5, 3.0])
+    shortage = np.array([13.0, 9.0, 11.0])
 
     demands = [
         np.array([50.0, 30.0, 20.0]),   # scenario 1
@@ -142,21 +125,29 @@ def DemoMulti():
         np.array([150.0, 60.0, 40.0]),   # scenario 3
         np.array([80.0, 50.0, 70.0])    # scenario 4
     ]
-    probs = np.array([0.3, 0.7, 0.5, 0.2])
+    probs = np.array([0.3, 0.1, 0.4, 0.2])
     rho = 1.0
 
-
+    plot = True
+    S = len(demands)    # number of scenarios
+    P = demands[0].shape[0]     # number of products
 
     x_bar, x_s, omegas, exp_cost = ProgressiveHedgingMultiProduct(
         purchase, holding, shortage, demands, probs,
         rho=rho, eps=1e-3, max_iter=1000, verbose=False,
-        plot=False
     )
+
+    # plot PHA solutions against single-scenario optima
+    if plot:
+        x_opt_single = np.zeros((S, P))
+        for s in range(S):
+            x_opt_single[s] = SolveSingleScenarioMultiProductOptimal(purchase, holding, shortage, demands[s])
+        
+        PlotSolutions(x_opt_single, x_s, x_bar)
 
     print("\nFinal multi-product results:")
     print(" x_bar =", x_bar)
     print("\n E[cost] =", exp_cost, "\n")
-
     print(" x_s   =\n", x_s, "\n")
     #print(" omegas =\n", omegas, "\n")
 
